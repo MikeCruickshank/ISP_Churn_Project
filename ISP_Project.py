@@ -84,87 +84,7 @@ def LogisticRegression(X_train, X_test, Y_train, Y_test, penalty = 'l2'):
 
     print("\n\nTest Set:")
     measure_performance(Y_test=Y_test, Y_pred = np.rint(Y_pred_test), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
- 
-
-
-def ExploreDatset(df, showSummary, showCounts, showPlots):
-
-    if (showSummary):
-        print("")
-        print("Head of full data frame:")
-        print(df.head())
-        print(df.dtypes)
-
-
-
-    if (showCounts == 1):
-        print("")
-        print("Counts of categorical values:\n")
-        print(df['gender'].value_counts())
-        print(df['Partner'].value_counts())
-        print(df['Dependents'].value_counts())
-        print(df['PhoneService'].value_counts())
-        print(df['MultipleLines'].value_counts())
-        print(df['InternetService'].value_counts())
-        print(df['OnlineSecurity'].value_counts())
-        print(df['DeviceProtection'].value_counts())
-        print(df['TechSupport'].value_counts())
-        print(df['StreamingTV'].value_counts())
-        print(df['Contract'].value_counts())
-        print(df['PaperlessBilling'].value_counts())
-        print(df['PaymentMethod'].value_counts())
-        print(df['Churn'].value_counts())
-    
-    if (showPlots == 1):
-        print("Box Plots: \n")
-        df.boxplot(column=['MonthlyCharges'],by=['Churn'],rot = 0,figsize=(5,6))
-        plt.ylabel('Monthly Charges [$]')
-        plt.xlabel('Churn')
-        plt.title('Monthly Charges')
-        plt.savefig('MonthlyCharges.png')
-        plt.show()
-
-        
-        df.boxplot(column=['TotalCharges'],by=['Churn'],rot = 0,figsize=(5,6))
-        plt.ylabel('Total Charges [$]')
-        plt.xlabel('Churn')
-        plt.title('Total Charges')
-        plt.savefig('TotalCharges.png')
-        plt.show()
-
-
-        
-        df.boxplot(column=['tenure'],by=['Churn'],rot = 0,figsize=(5,6))
-        plt.ylabel('Tenure [months]')
-        plt.xlabel('Churn')
-        plt.title('Tenure Box Plot')
-        plt.savefig('Tenure.png')
-        plt.show()
-
-        InternetService_count = df['InternetService'].value_counts()
-        sns.set(style="darkgrid")
-        sns.barplot(InternetService_count.index, InternetService_count.values, alpha=0.9)
-        plt.title('Distribution of InternetService')
-        plt.ylabel('Number of Occurrences', fontsize=12)
-        plt.xlabel('Service', fontsize=12)
-        plt.savefig('InternetService.png')
-        plt.show()
-
-        
-        Churn_count = df['Churn'].value_counts()
-        sns.set(style="darkgrid")
-        sns.barplot(Churn_count.index, Churn_count.values, alpha=0.9)
-        plt.title('Distribution of Churn')
-        plt.ylabel('Number of Occurrences', fontsize=12)
-        plt.xlabel('Churn', fontsize=12)
-        plt.savefig('ChurnDistribution.png')
-        plt.show()
-        
-        
-        df_churn = 
-        plt.figure()        
-        plt.barplot()
-        
+      
 
 
 #==============================================================================
@@ -482,7 +402,6 @@ df_drop=pd.read_csv('ispcustomerchurn_modified.csv')
 df_churn     = df_drop[df_drop["Churn"] == "Yes"]
 df_not_churn = df_drop[df_drop["Churn"] == "No"]
 
-ExploreDatset(df = df_drop, showSummary = 0, showCounts = 0, showPlots = 1)
 
 df_cat = ToCategories(df_drop, column_names = column_names_objects)
 df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)

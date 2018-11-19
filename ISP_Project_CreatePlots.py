@@ -56,6 +56,7 @@ def MakeBarChart(df, column):
     plt.legend(loc='best')
     saveStr = column + '_BarChart.png'
     print(saveStr)
+    plt.tight_layout()
     if (saveFigure == 1):
         plt.savefig(saveStr)
     plt.show()   
@@ -68,11 +69,12 @@ def MakeBoxPlot(df, column):
     plt.title(column)
     saveStr = column + '_BoxPlot.png'
     print(saveStr)
+    plt.tight_layout()
     if (saveFigure == 1):
         plt.savefig(saveStr)      
     plt.show()
 
-def MarkChurnPlots(df):
+def MakeChurnPlots(df):
     
     # churn bar plot
     Churn_count = df['Churn'].value_counts()
@@ -126,11 +128,13 @@ def ShowSummary(df):
 
 #----------------------------------------------------------------------------- 
 
-saveFigure = False
+saveFigure = True
 
 df=pd.read_csv('ispcustomerchurn.csv')
 
-ShowSummary(df)
+#==============================================================================
+# ShowSummary(df)
+#==============================================================================
 
 df['TotalCharges'] = df["TotalCharges"].replace(" ",np.nan)
 df = df[df["TotalCharges"].notnull()]
@@ -158,7 +162,7 @@ for i in cat_cols :
 for i in num_cols :
     MakeBoxPlot(df,i)
  
-MarkChurnPlots(df)
+MakeChurnPlots(df)
 
 
 
