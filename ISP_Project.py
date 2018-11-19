@@ -24,6 +24,13 @@ from sklearn.tree import export_graphviz
 
 from sklearn.cluster import KMeans
 
+import io
+import plotly.offline as py#visualization
+py.init_notebook_mode(connected=True)#visualization
+import plotly.graph_objs as go#visualization
+import plotly.tools as tls#visualization
+import plotly.figure_factory as ff#visualization
+
 
 def Kmeans(X,Y,train_size = 0.8):
     
@@ -114,24 +121,25 @@ def ExploreDatset(df, showSummary, showCounts, showPlots):
         plt.ylabel('Monthly Charges [$]')
         plt.xlabel('Churn')
         plt.title('Monthly Charges')
-        plt.show()
         plt.savefig('MonthlyCharges.png')
+        plt.show()
 
         
         df.boxplot(column=['TotalCharges'],by=['Churn'],rot = 0,figsize=(5,6))
         plt.ylabel('Total Charges [$]')
         plt.xlabel('Churn')
         plt.title('Total Charges')
-        plt.show()
         plt.savefig('TotalCharges.png')
+        plt.show()
+
 
         
         df.boxplot(column=['tenure'],by=['Churn'],rot = 0,figsize=(5,6))
         plt.ylabel('Tenure [months]')
         plt.xlabel('Churn')
         plt.title('Tenure Box Plot')
-        plt.show()
         plt.savefig('Tenure.png')
+        plt.show()
 
         InternetService_count = df['InternetService'].value_counts()
         sns.set(style="darkgrid")
@@ -139,8 +147,9 @@ def ExploreDatset(df, showSummary, showCounts, showPlots):
         plt.title('Distribution of InternetService')
         plt.ylabel('Number of Occurrences', fontsize=12)
         plt.xlabel('Service', fontsize=12)
-        plt.show()
         plt.savefig('InternetService.png')
+        plt.show()
+
         
         Churn_count = df['Churn'].value_counts()
         sns.set(style="darkgrid")
@@ -148,8 +157,13 @@ def ExploreDatset(df, showSummary, showCounts, showPlots):
         plt.title('Distribution of Churn')
         plt.ylabel('Number of Occurrences', fontsize=12)
         plt.xlabel('Churn', fontsize=12)
-        plt.show()
         plt.savefig('ChurnDistribution.png')
+        plt.show()
+        
+        
+        df_churn = 
+        plt.figure()        
+        plt.barplot()
         
 
 
@@ -465,8 +479,10 @@ df_drop = df.drop(df.index[totalChargesBool])
 df_drop.to_csv('ispcustomerchurn_modified.csv',index=False)
 df_drop=pd.read_csv('ispcustomerchurn_modified.csv')
 
+df_churn     = df_drop[df_drop["Churn"] == "Yes"]
+df_not_churn = df_drop[df_drop["Churn"] == "No"]
 
-ExploreDatset(df = df_drop, showSummary = 0, showCounts = 0, showPlots = 0)
+ExploreDatset(df = df_drop, showSummary = 0, showCounts = 0, showPlots = 1)
 
 df_cat = ToCategories(df_drop, column_names = column_names_objects)
 df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
@@ -479,11 +495,13 @@ n_columns = np.size(column_names)
 
 # Decision Tree
 #==============================================================================
-X,Y = AccessData(df = df_replace, xArray = np.arange(1,18), yIdx = 20)
-X_train, X_test, Y_train, Y_test = SplitData(X,Y,train_size = 0.8)
-
-print("\nWith Replace Data: ")
-clf = TrainDecisionTree(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test, max_depth = 14,  min_samples_split = 10,feature_names = column_names[1:n_columns-1], target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+#==============================================================================
+# X,Y = AccessData(df = df_replace, xArray = np.arange(1,18), yIdx = 20)
+# X_train, X_test, Y_train, Y_test = SplitData(X,Y,train_size = 0.8)
+# 
+# print("\nWith Replace Data: ")
+# clf = TrainDecisionTree(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test, max_depth = 14,  min_samples_split = 10,feature_names = column_names[1:n_columns-1], target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+#==============================================================================
 #==============================================================================
 # print("\n\nAdding KMeans:")
 # X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.8)
@@ -493,13 +511,15 @@ clf = TrainDecisionTree(X_train = X_train, X_test = X_test, Y_train = Y_train, Y
 
 # Random Forest
 #==============================================================================
-print("\nBefore KMeans: ")
-RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
-print("\n\nAdding KMeans:")
-X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.6)
-RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
-
-
+#==============================================================================
+# print("\nBefore KMeans: ")
+# RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
+# print("\n\nAdding KMeans:")
+# X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.6)
+# RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
+# 
+# 
+#==============================================================================
 #==============================================================================
 # Neural Network w/ Keras
 #==============================================================================
@@ -520,4 +540,6 @@ RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_t
 #==============================================================================
 
 # Logistic Regression
-LogisticRegression(X_train, X_test, Y_train, Y_test, penalty = 'l1')
+#==============================================================================
+# LogisticRegression(X_train, X_test, Y_train, Y_test, penalty = 'l1')
+#==============================================================================
