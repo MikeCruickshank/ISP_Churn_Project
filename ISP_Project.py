@@ -419,23 +419,23 @@ binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target
 multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
 
                  
-#==============================================================================
-#  #Label encoding Binary columns
-# le = LabelEncoder()
-# for i in binary_cols :
-#     df[i] = le.fit_transform(df[i])
-#     
-# #Duplicating columns for multi value columns
-# df = pd.get_dummies(data = df ,columns = multiple_cols )
-#==============================================================================
+ #Label encoding Binary columns
+le = LabelEncoder()
+for i in binary_cols:
+    df[i] = le.fit_transform(df[i])
+for i in target_col:
+    df[i] = le.fit_transform(df[i])
+#Duplicating columns for multi value columns
+df = pd.get_dummies(data = df ,columns = multiple_cols )
 
-df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
-print(df.head())
+#==============================================================================
+# df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
+# print(df.head())
+#==============================================================================
 scaler = StandardScaler()
 scaled = scaler.fit_transform(df[num_cols])
 scaled = pd.DataFrame(scaled,columns=num_cols)                 
 
-print(df.head())
 
 df_copy = df.copy()
 df = df.drop(labels=num_cols, axis=1)
@@ -444,11 +444,39 @@ df = df.merge(scaled,left_index=True,right_index=True,how = "left")
 
 #correlation
 correlation = df.corr()
-print(correlation)
 #tick labels
 matrix_cols = df.columns.tolist()
+correlation_byChurn = correlation.Churn
 #convert to array
 corr_array  = np.array(correlation)
+
+myList = correlation.columns
+
+
+srt0 = np.argsort(correlation_byChurn)
+
+correlation_byChurnSorted = [ correlation_byChurn[i] for i in srt0]
+myListSorted = [myList[i] for i in srt0]
+
+fig, ax = plt.subplots()
+index = np.arange(np.size(correlation_byChurnSorted))
+bar_width = 0.30
+opacity = 0.8
+   
+rects1 = ax.bar(index, correlation_byChurnSorted, bar_width, 
+                alpha=opacity, color = 'b')
+plt.ylabel('Correlation to Churn')
+plt.xticks(index + bar_width, myListSorted, rotation=90.)
+saveStr = 'Correlation_BarChart.png'
+fig = plt.gcf()
+fig.set_size_inches(11,8)
+plt.tight_layout()
+plt.savefig(saveStr)
+plt.show()   
+#==============================================================================
+# print(correlation.Churn)
+# 
+#==============================================================================
 #==============================================================================
 # df_cat = ToCategories(df_drop, column_names = column_names_objects)
 # df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
