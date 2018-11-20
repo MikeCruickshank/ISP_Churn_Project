@@ -137,6 +137,11 @@ df=pd.read_csv('ispcustomerchurn.csv')
 #==============================================================================
 
 df['TotalCharges'] = df["TotalCharges"].replace(" ",np.nan)
+
+print("Objects with Empty Total Charges:\n")
+df.loc[df['TotalCharges'].isnull(), 'TotalCharges'] = 0
+print(df.loc[df['TotalCharges'] == 0])
+       
 df = df[df["TotalCharges"].notnull()]
 df = df.reset_index()[df.columns]
 df["TotalCharges"] = df["TotalCharges"].astype(float)

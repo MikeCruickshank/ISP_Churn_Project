@@ -10,6 +10,9 @@ import pandas as pd
 import seaborn as sns
 import time
 import os
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+
 
 from keras.models import Sequential
 from keras.layers import Dense
@@ -23,13 +26,6 @@ from sklearn.tree import export_graphviz
 
 
 from sklearn.cluster import KMeans
-
-import io
-import plotly.offline as py#visualization
-py.init_notebook_mode(connected=True)#visualization
-import plotly.graph_objs as go#visualization
-import plotly.tools as tls#visualization
-import plotly.figure_factory as ff#visualization
 
 
 def Kmeans(X,Y,train_size = 0.8):
@@ -380,36 +376,91 @@ def _loss_tensor(y_true, y_pred):
     return K.mean(out, axis=-1)
 
     
+def label_tenure(df) :  
+    if df["tenure"] <= 12 :
+        return "Tenure: 0-1 Year"
+    elif (df["tenure"] > 12) & (df["tenure"] <= 24 ):
+        return "Tenure: 1-2 Years"
+    elif (df["tenure"] > 24) & (df["tenure"] <= 36) :
+        return "Tenure: 2-3 Years"
+    elif (df["tenure"] > 36) & (df["tenure"] <= 48) :
+        return "Tenure: 3-4 Years"
+    elif (df["tenure"] > 48) & (df["tenure"] <= 60) :
+        return "Tenure: 4-5 Years"
+    elif df["tenure"] > 60 :
+        return "Tenure: 5+ Years"    
     
 # Main    
 #==============================================================================
-column_names_objects = ['gender','Partner','Dependents',
-                        'PhoneService','MultipleLines','InternetService','OnlineSecurity','OnlineBackup',
-                        'DeviceProtection','TechSupport','StreamingTV','StreamingMovies','Contract',
-                        'PaperlessBilling','PaymentMethod','Churn'];
-
 df=pd.read_csv('ispcustomerchurn.csv')
+df['TotalCharges'] = df["TotalCharges"].replace(" ",np.nan)
 
-if(df.isnull().values.sum() != 0):
-    print("Dataset contains null values")
+df.loc[df['TotalCharges'].isnull(), 'TotalCharges'] = 0
+       
+df = df[df["TotalCharges"].notnull()]
+df = df.reset_index()[df.columns]
+df["TotalCharges"] = df["TotalCharges"].astype(float)
+df["SeniorCitizen"] = df["SeniorCitizen"].replace({1:"Yes",0:"No"})
+df["TenureByGroup"] = df.apply(lambda df:label_tenure(df),axis=1)
+      
+      
+num_cols = ['tenure','MonthlyCharges','TotalCharges']
+                        
+id_col     = ['customerID']
+target_col = ["Churn"]
+
+cat_cols  = [x for x in df.columns if x not in num_cols + target_col + id_col]
 
 
-totalChargesBool = (df['TotalCharges'].values == ' ')
-df_drop = df.drop(df.index[totalChargesBool])
-df_drop.to_csv('ispcustomerchurn_modified.csv',index=False)
-df_drop=pd.read_csv('ispcustomerchurn_modified.csv')
+df_churn     = df[df["Churn"] == "Yes"]
+df_no_churn = df[df["Churn"] == "No"]
+        
+binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target_col]
+multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
 
-df_churn     = df_drop[df_drop["Churn"] == "Yes"]
-df_not_churn = df_drop[df_drop["Churn"] == "No"]
-
-
-df_cat = ToCategories(df_drop, column_names = column_names_objects)
-df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
-df_onehot = OneHotDataFrame(df_drop, column_names = column_names_objects)
-
-column_names = list(df_replace.head(0))
-n_columns = np.size(column_names)
+                 
 #==============================================================================
+#  #Label encoding Binary columns
+# le = LabelEncoder()
+# for i in binary_cols :
+#     df[i] = le.fit_transform(df[i])
+#     
+# #Duplicating columns for multi value columns
+# df = pd.get_dummies(data = df ,columns = multiple_cols )
+#==============================================================================
+
+df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
+print(df.head())
+scaler = StandardScaler()
+scaled = scaler.fit_transform(df[num_cols])
+scaled = pd.DataFrame(scaled,columns=num_cols)                 
+
+print(df.head())
+
+df_copy = df.copy()
+df = df.drop(labels=num_cols, axis=1)
+df = df.merge(scaled,left_index=True,right_index=True,how = "left")
+
+
+#correlation
+correlation = df.corr()
+print(correlation)
+#tick labels
+matrix_cols = df.columns.tolist()
+#convert to array
+corr_array  = np.array(correlation)
+#==============================================================================
+# df_cat = ToCategories(df_drop, column_names = column_names_objects)
+# df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
+#==============================================================================
+#==============================================================================
+# df_onehot = OneHotDataFrame(df_drop, column_names = column_names_objects)
+# 
+# column_names = list(df_replace.head(0))
+# n_columns = np.size(column_names)
+#==============================================================================
+#==================================
+
 
 
 # Decision Tree
