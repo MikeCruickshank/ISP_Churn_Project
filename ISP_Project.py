@@ -18,8 +18,15 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 
+import sklearn
+from sklearn.cross_validation import train_test_split
 from sklearn import tree
 from sklearn import metrics
+from sklearn.metrics import confusion_matrix,accuracy_score,classification_report
+from sklearn.metrics import roc_auc_score,roc_curve,scorer
+from sklearn.metrics import f1_score
+import statsmodels.api as sm
+from sklearn.metrics import precision_score,recall_score
 
 from sklearn.externals.six import StringIO  
 from sklearn.tree import export_graphviz
@@ -66,23 +73,20 @@ def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8):
     print("\n\nTest Set:")
     measure_performance(Y_test=Y_test, Y_pred = np.rint(Y_pred_test), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
  
-def LogisticRegression(X_train, X_test, Y_train, Y_test, penalty = 'l2'):
+def LogisticRegression(X_train, X_test, Y_train, Y_test, cols, penalty = 'l2'):
     from sklearn.linear_model import LogisticRegression
     clf = LogisticRegression(random_state=0, penalty = penalty)
-
+    
+    Y_train = np.ravel(Y_train)
     clf.fit(X_train, Y_train);
-        
+      
     Y_pred_train =clf.predict(X_train)
     Y_pred_test =clf.predict(X_test)
     
-    print("\n\nTraining Set:")
-    measure_performance(Y_test=Y_train, Y_pred = np.rint(Y_pred_train), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
+    print (clf)
 
-    print("\n\nTest Set:")
-    measure_performance(Y_test=Y_test, Y_pred = np.rint(Y_pred_test), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
-      
-
-
+    measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
+    
 #==============================================================================
 
 def ReduceDataFrame(df, column_names):
@@ -274,7 +278,29 @@ def SplitData(X,Y,train_size):
     Y_test = np.reshape(Y_test,(n_testing_inputs,1))
     
     return X_train, X_test, Y_train, Y_test
+
+def SplitDataframeData(X_df,Y_df,train_size):
+    X = X_df.values
+    Y = Y_df.values
+    train_size = train_size
+    train_cnt = int((X.shape[0] * train_size))
+    np.random.shuffle(X)
+    np.random.shuffle(Y)
+    X_train = X[0:train_cnt][:]
+    Y_train = Y[0:train_cnt][:]
+    X_test = X[train_cnt:][:]
+    Y_test = Y[train_cnt:][:]
     
+    n_training_inputs = np.size(Y_train,0)
+    print("Number of Training Objects: ", n_training_inputs)
+    Y_train = np.reshape(Y_train, (n_training_inputs,1))
+    
+    n_testing_inputs = np.size(Y_test,0)
+    print("Number of Testing Objects: ", n_testing_inputs)
+    Y_test = np.reshape(Y_test,(n_testing_inputs,1))
+    
+    return X_train, X_test, Y_train, Y_test
+        
 
 def TrainDecisionTree(X_train, X_test, Y_train, Y_test, max_depth, min_samples_split,feature_names, target_names, filename = 'tree.dot'): 
     
@@ -328,20 +354,21 @@ def AccessData(df,xArray,yIdx):
     return X,Y
     
 
-def measure_performance(Y_test,Y_pred, target_labels, show_accuracy=True, show_classification_report=True, show_confusion_matrix=True):
+def measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train):
 
-    if show_accuracy:
-        print ("Accuracy:{0:.3f}".format(metrics.accuracy_score(Y_test,Y_pred)),"\n")
+    print("\n\nTraining Set:")
+    conf_matrix = confusion_matrix(Y_train,Y_pred_train)
+    print(conf_matrix) 
+    print ("Accuracy Score : ",metrics.accuracy_score(Y_train,Y_pred_train))
+    print ("\n Classification report : \n",metrics.classification_report(Y_train,Y_pred_train))
+     
+    print("\n\nTest Set:")
+    conf_matrix = confusion_matrix(Y_test,Y_pred_test)
+    print(conf_matrix)
+    print ("Accuracy Score : ",metrics.accuracy_score(Y_test,Y_pred_test))
+    print ("\n Classification report : \n",metrics.classification_report(Y_test,Y_pred_test))
 
-    if show_classification_report:
-        print ("Classification report")
-        print (metrics.classification_report(Y_test,Y_pred, target_names = target_labels),"\n")
-        
-    if show_confusion_matrix:
-        print ("Confusion matrix")
-        print (metrics.confusion_matrix(Y_test,Y_pred),"\n")
- 
-        
+    
 def TrainKerasNeuralNetwork(X_train, X_test, Y_train, Y_test,epochs = 1000, batch_size = 32):
     print("\nNN Number of Attributes: ", np.size(X_train,1))
     # fix random seed for reproducibility
@@ -458,21 +485,42 @@ srt0 = np.argsort(correlation_byChurn)
 correlation_byChurnSorted = [ correlation_byChurn[i] for i in srt0]
 myListSorted = [myList[i] for i in srt0]
 
-fig, ax = plt.subplots()
-index = np.arange(np.size(correlation_byChurnSorted))
-bar_width = 0.30
-opacity = 0.8
-   
-rects1 = ax.bar(index, correlation_byChurnSorted, bar_width, 
-                alpha=opacity, color = 'b')
-plt.ylabel('Correlation to Churn')
-plt.xticks(index + bar_width, myListSorted, rotation=90.)
-saveStr = 'Correlation_BarChart.png'
-fig = plt.gcf()
-fig.set_size_inches(11,8)
-plt.tight_layout()
-plt.savefig(saveStr)
-plt.show()   
+correlation_byChurnSorted = correlation_byChurnSorted[0:np.size(correlation_byChurnSorted)-1]
+myListSorted = myListSorted[0:np.size(myListSorted)-1]
+
+#==============================================================================
+# fig, ax = plt.subplots()
+# index = np.arange(np.size(correlation_byChurnSorted))
+# bar_width = 0.30
+# opacity = 0.8
+#    
+# rects1 = ax.bar(index, correlation_byChurnSorted, bar_width, 
+#                 alpha=opacity, color = 'b')
+# plt.ylabel('Correlation to Churn')
+# plt.yticks(rotation = 90.)
+# plt.xticks(index + bar_width, myListSorted, rotation=90.)
+# saveStr = 'Correlation_BarChart.png'
+# plt.axis([-0.5, np.size(correlation_byChurnSorted), -0.5, 0.5])
+# fig = plt.gcf()
+# fig.set_size_inches(11,8)
+# plt.tight_layout()
+# plt.savefig(saveStr)
+# plt.show()   
+#==============================================================================
+
+### Models
+train,test = train_test_split(df,test_size = .25 ,random_state = 111)
+
+cols    = [i for i in df.columns if i not in id_col + target_col]
+train_X = train[cols]
+train_Y = train[target_col]
+test_X  = test[cols]
+test_Y  = test[target_col]  
+
+
+# Logistic Regression
+LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+
 #==============================================================================
 # print(correlation.Churn)
 # 
@@ -537,7 +585,3 @@ plt.show()
 # 
 #==============================================================================
 
-# Logistic Regression
-#==============================================================================
-# LogisticRegression(X_train, X_test, Y_train, Y_test, penalty = 'l1')
-#==============================================================================
