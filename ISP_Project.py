@@ -14,9 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 
 
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Dropout
+
 
 import sklearn
 from sklearn.cross_validation import train_test_split
@@ -362,10 +360,16 @@ def measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train):
 
     
 def TrainKerasNeuralNetwork(X_train, X_test, Y_train, Y_test,epochs = 1000, batch_size = 32):
+    from keras.models import Sequential
+    from keras.layers import Dense
+    from keras.layers import Dropout
+    
     print("\nNN Number of Attributes: ", np.size(X_train,1))
     # fix random seed for reproducibility
     np.random.seed(7)
     
+    Y_train = np.ravel(Y_train)
+
     # create model
     model = Sequential()
     model.add(Dense(np.size(X_train,1), input_dim=np.size(X_train,1), activation='relu'))
@@ -377,15 +381,10 @@ def TrainKerasNeuralNetwork(X_train, X_test, Y_train, Y_test,epochs = 1000, batc
     model.compile(loss=_loss_tensor, optimizer='adam', metrics=['accuracy'])
     model.fit(X_train, Y_train, epochs=epochs, batch_size= batch_size)
 
-    Y_pred_train = model.predict(X_train, batch_size=None, steps=None)
-    Y_pred_test = model.predict(X_test, batch_size=None, steps=None)
+    Y_pred_train = model.predict_classes(X_train)
+    Y_pred_test = model.predict_classes(X_test)
     
-    print("\n\nTraining Set:")
-    measure_performance(Y_test=Y_train, Y_pred = np.rint(Y_pred_train), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
-
-    print("\n\nTest Set:")
-    measure_performance(Y_test=Y_test, Y_pred = np.rint(Y_pred_test), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
- 
+    measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
 
 def _loss_tensor(y_true, y_pred):
     from keras import backend as K
@@ -452,17 +451,15 @@ df = pd.get_dummies(data = df ,columns = multiple_cols)
 # df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
 # print(df.head())
 #==============================================================================
-#==============================================================================
-# scaler = StandardScaler()
-# scaled = scaler.fit_transform(df[num_cols])
-# scaled = pd.DataFrame(scaled,columns=num_cols)                 
-# 
-# df_copy = df.copy()
-# df = df.drop(labels=num_cols, axis=1)
-# df = df.merge(scaled,left_index=True,right_index=True,how = "left")
-# 
-# 
-#==============================================================================
+scaler = StandardScaler()
+scaled = scaler.fit_transform(df[num_cols])
+scaled = pd.DataFrame(scaled,columns=num_cols)                 
+
+df_copy = df.copy()
+df = df.drop(labels=num_cols, axis=1)
+df = df.merge(scaled,left_index=True,right_index=True,how = "left")
+
+
 #correlation
 correlation = df.corr()
 #tick labels
@@ -517,14 +514,42 @@ test_Y  = test[target_col]
 LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
 # Decision Tree 
-clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-                         Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
-                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+#==============================================================================
+# clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+#                          Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+#                          feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+#==============================================================================
 
 # Random Forest 
-RandomForest(train_X, test_X, train_Y,
-                         test_Y, max_depth = 5, min_samples_split = 10)
+#==============================================================================
+# RandomForest(train_X, test_X, train_Y,
+#                          test_Y, max_depth = 5, min_samples_split = 10)
+#==============================================================================
 
+# Neural Network (Keras)
+TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
+
+
+from imblearn.over_sampling import SMOTE
+
+cols    = [i for i in df.columns if i not in id_col + target_col]
+
+smote_X = df[cols]
+smote_Y = df[target_col]
+
+#Split train and test data
+smote_train_X,smote_test_X,smote_train_Y,smote_test_Y = train_test_split(smote_X,smote_Y,
+                                                                         test_size = .25 ,
+                                                                         random_state = 111)
+
+#oversampling minority class using smote
+over_samp = SMOTE(random_state = 0)
+over_samp_smote_X,over_samp_smote_Y = over_samp.fit_sample(smote_train_X,smote_train_Y)
+over_samp_smote_X = pd.DataFrame(data = over_samp_smote_X,columns=cols)
+over_samp_smote_Y = pd.DataFrame(data = over_samp_smote_Y,columns=target_col)
+
+
+TrainKerasNeuralNetwork(over_samp_smote_X,test_X,over_samp_smote_Y,test_Y, epochs = 35, batch_size = 1024)
 
 #==============================================================================
 # df_cat = ToCategories(df_drop, column_names = column_names_objects)
