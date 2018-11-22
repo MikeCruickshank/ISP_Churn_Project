@@ -20,7 +20,6 @@ from keras.layers import Dropout
 
 import sklearn
 from sklearn.cross_validation import train_test_split
-from sklearn import tree
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix,accuracy_score,classification_report
 from sklearn.metrics import roc_auc_score,roc_curve,scorer
@@ -32,11 +31,10 @@ from sklearn.externals.six import StringIO
 from sklearn.tree import export_graphviz
 
 
-from sklearn.cluster import KMeans
 
 
 def Kmeans(X,Y,train_size = 0.8):
-    
+    from sklearn.cluster import KMeans
     X_train, X_test, Y_train, Y_test = SplitData(X,Y,train_size = train_size)
 
         
@@ -57,22 +55,7 @@ def Kmeans(X,Y,train_size = 0.8):
     
     return X_train, X_test, Y_train, Y_test
 
-def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8):
-    from sklearn.ensemble import RandomForestClassifier
-    rf = RandomForestClassifier(n_estimators = 5000, random_state = 42, max_depth = max_depth)
 
-
-    rf.fit(X_train, Y_train);
-        
-    Y_pred_train = rf.predict(X_train)
-    Y_pred_test =rf.predict(X_test)
-    
-    print("\n\nTraining Set:")
-    measure_performance(Y_test=Y_train, Y_pred = np.rint(Y_pred_train), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
-
-    print("\n\nTest Set:")
-    measure_performance(Y_test=Y_test, Y_pred = np.rint(Y_pred_test), target_labels =  ['Churn: No','Churn: Yes'], show_accuracy=True, show_classification_report=True, show_confusion_matrix=True)
- 
 def LogisticRegression(X_train, X_test, Y_train, Y_test, cols, penalty = 'l2'):
     from sklearn.linear_model import LogisticRegression
     clf = LogisticRegression(random_state=0, penalty = penalty)
@@ -303,29 +286,38 @@ def SplitDataframeData(X_df,Y_df,train_size):
         
 
 def TrainDecisionTree(X_train, X_test, Y_train, Y_test, max_depth, min_samples_split,feature_names, target_names, filename = 'tree.dot'): 
-    
-    
+    from sklearn import tree
+    Y_train = np.ravel(Y_train)
     clf = tree.DecisionTreeClassifier(criterion='gini', max_depth=max_depth, min_samples_split=min_samples_split, min_samples_leaf=1)
     clf = clf.fit(X_train, Y_train)
-    Y_pred = np.reshape(clf.predict(X_test),(np.size(Y_test,0),1));
-    Y_pred_train = np.reshape(clf.predict(X_train),(np.size(Y_train,0),1));
-    
-    
-    AnalyzeError(Y_train = Y_train, Y_test = Y_test, Y_pred_train = Y_pred_train, Y_pred_test = Y_pred)
 
-    tree.export_graphviz(clf,out_file=filename,feature_names = feature_names,
-                class_names = target_names)
+    tree.export_graphviz(clf,out_file=filename,max_depth = 3, feature_names = feature_names,
+                filled = True, class_names = target_names,label = 'all', rounded= True,
+                proportion = True, rotate = True)
+
+
+    Y_pred_train =clf.predict(X_train)
+    Y_pred_test =clf.predict(X_test)
     
-    dot_data = StringIO()
-    export_graphviz(clf, out_file=dot_data, filled=True, special_characters=True,
-                    rounded = True, proportion = True, label = 'none')
+    print (clf)
 
-    print("Train Set: \n")
-    measure_performance(Y_test = Y_train,Y_pred = Y_pred_train, target_labels = ['Churn: No','Churn: Yes'])
-    print("Test Set: \n")
-    measure_performance(Y_test = Y_test, Y_pred = Y_pred , target_labels = ['Churn: No','Churn: Yes'])
-
+    measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
+    
     return clf
+    
+def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8, min_samples_split = 5):
+    from sklearn.ensemble import RandomForestClassifier
+    Y_train = np.ravel(Y_train)
+    rf = RandomForestClassifier(n_estimators = 5000, random_state = 42, max_depth = max_depth, min_samples_split = min_samples_split)
+
+
+    rf.fit(X_train, Y_train);
+        
+
+    Y_pred_train =rf.predict(X_train)
+    Y_pred_test =rf.predict(X_test)
+    print (rf)
+    measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
     
 def DeleteRowsFromDF(df,n_delete = 1000, targetIdx = 47):
     df_copy = df.copy()
@@ -452,23 +444,25 @@ for i in binary_cols:
     df[i] = le.fit_transform(df[i])
 for i in target_col:
     df[i] = le.fit_transform(df[i])
+    
 #Duplicating columns for multi value columns
-df = pd.get_dummies(data = df ,columns = multiple_cols )
+df = pd.get_dummies(data = df ,columns = multiple_cols)
 
 #==============================================================================
 # df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
 # print(df.head())
 #==============================================================================
-scaler = StandardScaler()
-scaled = scaler.fit_transform(df[num_cols])
-scaled = pd.DataFrame(scaled,columns=num_cols)                 
-
-
-df_copy = df.copy()
-df = df.drop(labels=num_cols, axis=1)
-df = df.merge(scaled,left_index=True,right_index=True,how = "left")
-
-
+#==============================================================================
+# scaler = StandardScaler()
+# scaled = scaler.fit_transform(df[num_cols])
+# scaled = pd.DataFrame(scaled,columns=num_cols)                 
+# 
+# df_copy = df.copy()
+# df = df.drop(labels=num_cols, axis=1)
+# df = df.merge(scaled,left_index=True,right_index=True,how = "left")
+# 
+# 
+#==============================================================================
 #correlation
 correlation = df.corr()
 #tick labels
@@ -487,6 +481,7 @@ myListSorted = [myList[i] for i in srt0]
 
 correlation_byChurnSorted = correlation_byChurnSorted[0:np.size(correlation_byChurnSorted)-1]
 myListSorted = myListSorted[0:np.size(myListSorted)-1]
+# print(correlation.Churn)
 
 #==============================================================================
 # fig, ax = plt.subplots()
@@ -521,10 +516,16 @@ test_Y  = test[target_col]
 # Logistic Regression
 LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
-#==============================================================================
-# print(correlation.Churn)
-# 
-#==============================================================================
+# Decision Tree 
+clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+                         Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+
+# Random Forest 
+RandomForest(train_X, test_X, train_Y,
+                         test_Y, max_depth = 5, min_samples_split = 10)
+
+
 #==============================================================================
 # df_cat = ToCategories(df_drop, column_names = column_names_objects)
 # df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
