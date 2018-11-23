@@ -56,7 +56,7 @@ def Kmeans(X,Y,train_size = 0.8):
     return X_train, X_test, Y_train, Y_test
 
 
-def LogisticRegression(X_train, X_test, Y_train, Y_test, cols, penalty = 'l2'):
+def LogisticRegressionModel(X_train, X_test, Y_train, Y_test, cols, penalty = 'l2'):
     from sklearn.linear_model import LogisticRegression
     clf = LogisticRegression(random_state=0, penalty = penalty)
     
@@ -436,6 +436,7 @@ cat_cols  = [x for x in df.columns if x not in num_cols + target_col + id_col]
 binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target_col]
 multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
 
+print(df.dtypes)
                  
  #Label encoding Binary columns
 le = LabelEncoder()
@@ -459,6 +460,7 @@ df_copy = df.copy()
 df = df.drop(labels=num_cols, axis=1)
 df = df.merge(scaled,left_index=True,right_index=True,how = "left")
 
+print(df.dtypes)
 
 #correlation
 correlation = df.corr()
@@ -511,111 +513,159 @@ test_Y  = test[target_col]
 
 
 # Logistic Regression
-LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
 # Decision Tree 
-#==============================================================================
-# =============================================================================
-# clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-#                          Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
-#                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-# =============================================================================
-#==============================================================================
+if 0:
+    clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+                             Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 
 # Random Forest 
-#==============================================================================
-# RandomForest(train_X, test_X, train_Y,
-#                          test_Y, max_depth = 5, min_samples_split = 10)
-#==============================================================================
+if 0:
+    RandomForest(train_X, test_X, train_Y,
+                          test_Y, max_depth = 5, min_samples_split = 10)
+
 
 # Neural Network (Keras)
 # =============================================================================
 # TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
 # =============================================================================
 
-# Undersampling
-count_no_churn, count_churn = df.Churn.value_counts()
-df_churn     = df[df["Churn"] == 1]
-df_no_churn = df[df["Churn"] == 0]
+# Undersampling/Oversampling
+if 0:
+    train,test = train_test_split(df,test_size = .25 ,random_state = 111)
 
-df_no_churn_reduced = df_no_churn.sample(count_churn)
-df_reduced = pd.concat([df_no_churn_reduced, df_churn], axis=0)
+    cols    = [i for i in df.columns if i not in id_col + target_col]
 
-print('Random under-sampling:')
-print(df_reduced.Churn.value_counts())
+    test_X  = test[cols]
+    test_Y  = test[target_col]  
 
-train,test = train_test_split(df_reduced,test_size = .25 ,random_state = 111)
 
-cols    = [i for i in df.columns if i not in id_col + target_col]
-train_X = train[cols]
-train_Y = train[target_col]
-test_X  = test[cols]
-test_Y  = test[target_col]  
+    count_no_churn, count_churn = df.Churn.value_counts()
+    df_churn     = df[df["Churn"] == 1]
+    df_no_churn = df[df["Churn"] == 0]
+    
+    df_no_churn_reduced = df_no_churn.sample(count_churn)
+    df_reduced = pd.concat([df_no_churn_reduced, df_churn], axis=0)
+    
+    print('Random under-sampling:')
+    print(df_reduced.Churn.value_counts())
+    
+    train,test = train_test_split(df_reduced,test_size = .25 ,random_state = 111)
+    
+    train_X = train[cols]
+    train_Y = train[target_col]
 
-LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    
+    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    
+    #Oversampling
+    df_churn_over = df_churn.sample(count_no_churn, replace=True)
+    df_over = pd.concat([df_no_churn, df_churn_over], axis=0)
+    
+    print('Random over-sampling:')
+    print(df_over.Churn.value_counts())
+    
+    train,test = train_test_split(df_over,test_size = .25 ,random_state = 111)
+    
+    train_X = train[cols]
+    train_Y = train[target_col]
+ 
+    
+    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+# =============================================================================
+# clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+#                           Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+#                          feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+# =============================================================================
 
-#Oversampling
-df_churn_over = df_churn.sample(count_no_churn, replace=True)
-df_over = pd.concat([df_no_churn, df_churn_over], axis=0)
 
-print('Random over-sampling:')
-print(df_over.Churn.value_counts())
-
-train,test = train_test_split(df_over,test_size = .25 ,random_state = 111)
-
-cols    = [i for i in df.columns if i not in id_col + target_col]
-train_X = train[cols]
-train_Y = train[target_col]
-test_X  = test[cols]
-test_Y  = test[target_col]  
-
-LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
-clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-                          Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
-                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 # =============================================================================
 # PCA Visualization
-# =============================================================================
-# from sklearn.decomposition import PCA
-# pca = PCA(n_components = 2)
-# 
-# X = df[[i for i in df.columns if i not in id_col + target_col]]
-# Y = df[target_col]
-# 
-# principal_components = pca.fit_transform(X)
-# 
-# pca_data = pd.DataFrame(principal_components,columns = ["PC1","PC2"])
-# pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
-# 
-# pca_data["Churn"] = pca_data["Churn"].replace({1:"Churn",0:"Not Churn"})
-# plt.scatter(x = pca_data[pca_data["Churn"] == 'Churn']["PC3"],
-#             y = pca_data[pca_data["Churn"] == 'Churn']["PC2"],
-#             s = 20, c = 'red', marker='o', alpha = 0.5)
-# plt.scatter(x = pca_data[pca_data["Churn"] == 'Not Churn']["PC3"],
-#             y = pca_data[pca_data["Churn"] == 'Not Churn']["PC2"],
-#             s = 20, c = 'blue', marker='o', alpha = 0.1)
-# 
-# =============================================================================
+if 0:
+    from sklearn.decomposition import PCA
+    pca = PCA(n_components = 2)
+    
+    X = df[[i for i in df.columns if i not in id_col + target_col]]
+    Y = df[target_col]
+    
+    principal_components = pca.fit_transform(X)
+    
+    pca_data = pd.DataFrame(principal_components,columns = ["PC1","PC2"])
+    pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
+    
+    pca_data["Churn"] = pca_data["Churn"].replace({1:"Churn",0:"Not Churn"})
+    plt.scatter(x = pca_data[pca_data["Churn"] == 'Churn']["PC1"],
+                y = pca_data[pca_data["Churn"] == 'Churn']["PC2"],
+                s = 20, c = 'red', marker='o', alpha = 0.5)
+
+    plt.scatter(x = pca_data[pca_data["Churn"] == 'Not Churn']["PC1"],
+                y = pca_data[pca_data["Churn"] == 'Not Churn']["PC2"],
+                s = 20, c = 'blue', marker='o', alpha = 0.1)
+    plt.legend(['Churn: Yes', 'Churn: No'])
+    saveStr = 'PCA_Scatter.png'
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(saveStr)
+    
 # PCA Logistic Regression
-# =============================================================================
-# pca = PCA(n_components = 4)
-# 
-# X = df[[i for i in df.columns if i not in id_col + target_col]]
-# Y = df[target_col]
-# 
-# principal_components = pca.fit_transform(X)
-# 
-# pca_data = pd.DataFrame(principal_components)
-# pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
-# 
-# train,test = train_test_split(pca_data,test_size = .25 ,random_state = 111)
-# cols    = [i for i in pca_data.columns if i not in id_col + target_col]
-# train_X = train[cols]
-# train_Y = train[target_col]
-# test_X  = test[cols]
-# test_Y  = test[target_col]  
-# LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
-# =============================================================================
+if 0:
+    from sklearn.decomposition import PCA
+    pca = PCA(n_components = 4)
+    
+    X = df[[i for i in df.columns if i not in id_col + target_col]]
+    Y = df[target_col]
+    
+    principal_components = pca.fit_transform(X)
+    
+    pca_data = pd.DataFrame(principal_components)
+    pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
+    
+    train,test = train_test_split(pca_data,test_size = .25 ,random_state = 111)
+    cols    = [i for i in pca_data.columns if i not in id_col + target_col]
+    train_X = train[cols]
+    train_Y = train[target_col]
+    test_X  = test[cols]
+    test_Y  = test[target_col]  
+    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    
+# Recursive Feature Elimination
+if 0:
+    from sklearn.feature_selection import RFE
+    from sklearn.linear_model import LogisticRegression
+    
+    train,test = train_test_split(df,test_size = .25 ,random_state = 111)
+    X = df[[i for i in df.columns if i not in id_col + target_col]]
+    Y = df[target_col]
+    
+    logit = LogisticRegression()
+
+    rfe = RFE(logit,24)
+    rfe = rfe.fit(X,Y.values.ravel())
+    
+    rfe.support_
+    rfe.ranking_
+    
+    #identified columns Recursive Feature Elimination
+    idc_rfe = pd.DataFrame({"rfe_support" :rfe.support_,
+                           "columns" : [i for i in df.columns if i not in id_col + target_col],
+                           "ranking" : rfe.ranking_,
+                          })
+    cols = idc_rfe[idc_rfe["rfe_support"] == True]["columns"].tolist()
+    
+    
+    #separating train and test data
+    train_rf_X = X[cols]
+    train_rf_Y = Y
+    test_rf_X  = test[cols]
+    test_rf_Y  = test[target_col]
+    
+    print('\nRecursive Feature Elimination:')
+    LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
+
 # ==================================================v===========================
 # from imblearn.over_sampling import SMOTE
 # 
