@@ -3,7 +3,9 @@
 
 """
 
-import tensorflow as tf 
+# =============================================================================
+# import tensorflow as tf 
+# =============================================================================
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -430,8 +432,6 @@ target_col = ["Churn"]
 cat_cols  = [x for x in df.columns if x not in num_cols + target_col + id_col]
 
 
-df_churn     = df[df["Churn"] == "Yes"]
-df_no_churn = df[df["Churn"] == "No"]
         
 binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target_col]
 multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
@@ -515,9 +515,11 @@ LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
 # Decision Tree 
 #==============================================================================
+# =============================================================================
 # clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
 #                          Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
-#                          feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+#                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+# =============================================================================
 #==============================================================================
 
 # Random Forest 
@@ -527,30 +529,116 @@ LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 #==============================================================================
 
 # Neural Network (Keras)
-TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
+# =============================================================================
+# TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
+# =============================================================================
 
+# Undersampling
+count_no_churn, count_churn = df.Churn.value_counts()
+df_churn     = df[df["Churn"] == 1]
+df_no_churn = df[df["Churn"] == 0]
 
-from imblearn.over_sampling import SMOTE
+df_no_churn_reduced = df_no_churn.sample(count_churn)
+df_reduced = pd.concat([df_no_churn_reduced, df_churn], axis=0)
+
+print('Random under-sampling:')
+print(df_reduced.Churn.value_counts())
+
+train,test = train_test_split(df_reduced,test_size = .25 ,random_state = 111)
 
 cols    = [i for i in df.columns if i not in id_col + target_col]
+train_X = train[cols]
+train_Y = train[target_col]
+test_X  = test[cols]
+test_Y  = test[target_col]  
 
-smote_X = df[cols]
-smote_Y = df[target_col]
+LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
-#Split train and test data
-smote_train_X,smote_test_X,smote_train_Y,smote_test_Y = train_test_split(smote_X,smote_Y,
-                                                                         test_size = .25 ,
-                                                                         random_state = 111)
+#Oversampling
+df_churn_over = df_churn.sample(count_no_churn, replace=True)
+df_over = pd.concat([df_no_churn, df_churn_over], axis=0)
 
-#oversampling minority class using smote
-over_samp = SMOTE(random_state = 0)
-over_samp_smote_X,over_samp_smote_Y = over_samp.fit_sample(smote_train_X,smote_train_Y)
-over_samp_smote_X = pd.DataFrame(data = over_samp_smote_X,columns=cols)
-over_samp_smote_Y = pd.DataFrame(data = over_samp_smote_Y,columns=target_col)
+print('Random over-sampling:')
+print(df_over.Churn.value_counts())
 
+train,test = train_test_split(df_over,test_size = .25 ,random_state = 111)
 
-TrainKerasNeuralNetwork(over_samp_smote_X,test_X,over_samp_smote_Y,test_Y, epochs = 35, batch_size = 1024)
+cols    = [i for i in df.columns if i not in id_col + target_col]
+train_X = train[cols]
+train_Y = train[target_col]
+test_X  = test[cols]
+test_Y  = test[target_col]  
 
+LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+                          Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+                         feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+# =============================================================================
+# PCA Visualization
+# =============================================================================
+# from sklearn.decomposition import PCA
+# pca = PCA(n_components = 2)
+# 
+# X = df[[i for i in df.columns if i not in id_col + target_col]]
+# Y = df[target_col]
+# 
+# principal_components = pca.fit_transform(X)
+# 
+# pca_data = pd.DataFrame(principal_components,columns = ["PC1","PC2"])
+# pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
+# 
+# pca_data["Churn"] = pca_data["Churn"].replace({1:"Churn",0:"Not Churn"})
+# plt.scatter(x = pca_data[pca_data["Churn"] == 'Churn']["PC3"],
+#             y = pca_data[pca_data["Churn"] == 'Churn']["PC2"],
+#             s = 20, c = 'red', marker='o', alpha = 0.5)
+# plt.scatter(x = pca_data[pca_data["Churn"] == 'Not Churn']["PC3"],
+#             y = pca_data[pca_data["Churn"] == 'Not Churn']["PC2"],
+#             s = 20, c = 'blue', marker='o', alpha = 0.1)
+# 
+# =============================================================================
+# PCA Logistic Regression
+# =============================================================================
+# pca = PCA(n_components = 4)
+# 
+# X = df[[i for i in df.columns if i not in id_col + target_col]]
+# Y = df[target_col]
+# 
+# principal_components = pca.fit_transform(X)
+# 
+# pca_data = pd.DataFrame(principal_components)
+# pca_data = pca_data.merge(Y,left_index=True,right_index=True,how="left")
+# 
+# train,test = train_test_split(pca_data,test_size = .25 ,random_state = 111)
+# cols    = [i for i in pca_data.columns if i not in id_col + target_col]
+# train_X = train[cols]
+# train_Y = train[target_col]
+# test_X  = test[cols]
+# test_Y  = test[target_col]  
+# LogisticRegression(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+# =============================================================================
+# ==================================================v===========================
+# from imblearn.over_sampling import SMOTE
+# 
+# cols    = [i for i in df.columns if i not in id_col + target_col]
+# 
+# smote_X = df[cols]
+# smote_Y = df[target_col]
+# 
+# #Split train and test data
+# smote_train_X,smote_test_X,smote_train_Y,smote_test_Y = train_test_split(smote_X,smote_Y,
+#                                                                          test_size = .25 ,
+#                                                                          random_state = 111)
+# 
+# #oversampling minority class using smote
+# over_samp = SMOTE(random_state = 0)
+# over_samp_smote_X,over_samp_smote_Y = over_samp.fit_sample(smote_train_X,smote_train_Y)
+# over_samp_smote_X = pd.DataFrame(data = over_samp_smote_X,columns=cols)
+# over_samp_smote_Y = pd.DataFrame(data = over_samp_smote_Y,columns=target_col)
+# 
+# 
+# TrainKerasNeuralNetwork(over_samp_smote_X,test_X,over_samp_smote_Y,test_Y, epochs = 35, batch_size = 1024)
+# 
+# =============================================================================
 #==============================================================================
 # df_cat = ToCategories(df_drop, column_names = column_names_objects)
 # df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
