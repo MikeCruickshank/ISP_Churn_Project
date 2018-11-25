@@ -2,29 +2,28 @@
 """
 
 """
-
 # =============================================================================
 # import tensorflow as tf 
 # =============================================================================
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+# =============================================================================
+# import seaborn as sns
+# =============================================================================
 import time
 import os
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 
 
-
-
 import sklearn
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix,accuracy_score,classification_report
 from sklearn.metrics import roc_auc_score,roc_curve,scorer
 from sklearn.metrics import f1_score
-import statsmodels.api as sm
+import statsmodels.api as smf
 from sklearn.metrics import precision_score,recall_score
 
 from sklearn.externals.six import StringIO  
@@ -71,61 +70,6 @@ def LogisticRegressionModel(X_train, X_test, Y_train, Y_test, cols, penalty = 'l
     measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
     
 #==============================================================================
-
-def ReduceDataFrame(df, column_names):
-    replace_map = {'gender': {'Female': 0, 'Male': 1},
-               'Partner': {'Yes': 1, 'No': 0},
-               'Dependents': {'Yes': 1, 'No': 0},
-               'PhoneService': {'Yes': 1, 'No': 0},
-               'MultipleLines': {'Yes': 1, 'No': 0,'No phone service': 2},
-               'InternetService': {'DSL': 1, 'No': 0,'Fiber optic': 2},
-               'OnlineSecurity': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'OnlineBackup': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'DeviceProtection': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'TechSupport': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'StreamingTV': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'StreamingMovies': {'Yes': 1, 'No': 0,'No internet service': 2},
-               'Contract': {'One year': 1, 'Month-to-month': 0,'Two year': 2},
-               'PaperlessBilling': {'Yes': 1, 'No': 0},
-               'PaymentMethod': {'Mailed check': 0, 'Electronic check': 1,'Bank transfer (automatic)': 2, 'Credit card (automatic)': 3},
-               'Churn': {'Yes': 1, 'No': 0},
-            }
-
-    df_replace = df.copy()
-    df_replace.replace(replace_map, inplace=True)
-    
-    for c_it in column_names:
-        df_replace[c_it] =df_replace[c_it].astype('category')
-   
-    df_replace['Churn'] =df_replace['Churn'].astype('int64')
-#==============================================================================
-# 
-#     df_replace['MonthlyCharges'] =(df_replace['MonthlyCharges'])/(np.max(df_replace['MonthlyCharges'].values))
-#     df_replace['TotalCharges'] =(df_replace['TotalCharges'])/(np.max(df_replace['TotalCharges'].values))
-#==============================================================================
-
-    return df_replace
-
-def ToCategories(df, column_names):
-    df_cat = df.copy()
-    for c_it in column_names:
-        df_cat[c_it] =df_cat[c_it].astype('category')
-    
-    return df_cat
-#==============================================================================
-def  OneHotDataFrame(df, column_names):
-
-    df_onehot = df.copy()
-    for c_it in column_names:
-        df_onehot = pd.get_dummies(df_onehot, columns=[c_it], prefix = [c_it])
-   
-    df_onehot['MonthlyCharges'] =(df_onehot['MonthlyCharges'])/(np.max(df_onehot['MonthlyCharges'].values))
-    df_onehot['TotalCharges'] =(df_onehot['TotalCharges'])/(np.max(df_onehot['TotalCharges'].values))
-
-    
-    return df_onehot  
-#==============================================================================
-
 
 def TrainNeuralNetwork(df_onehot):
     start_time = time.time()
@@ -261,28 +205,6 @@ def SplitData(X,Y,train_size):
     Y_test = np.reshape(Y_test,(n_testing_inputs,1))
     
     return X_train, X_test, Y_train, Y_test
-
-def SplitDataframeData(X_df,Y_df,train_size):
-    X = X_df.values
-    Y = Y_df.values
-    train_size = train_size
-    train_cnt = int((X.shape[0] * train_size))
-    np.random.shuffle(X)
-    np.random.shuffle(Y)
-    X_train = X[0:train_cnt][:]
-    Y_train = Y[0:train_cnt][:]
-    X_test = X[train_cnt:][:]
-    Y_test = Y[train_cnt:][:]
-    
-    n_training_inputs = np.size(Y_train,0)
-    print("Number of Training Objects: ", n_training_inputs)
-    Y_train = np.reshape(Y_train, (n_training_inputs,1))
-    
-    n_testing_inputs = np.size(Y_test,0)
-    print("Number of Testing Objects: ", n_testing_inputs)
-    Y_test = np.reshape(Y_test,(n_testing_inputs,1))
-    
-    return X_train, X_test, Y_train, Y_test
         
 
 def TrainDecisionTree(X_train, X_test, Y_train, Y_test, max_depth, min_samples_split,feature_names, target_names, filename = 'tree.dot'): 
@@ -305,10 +227,10 @@ def TrainDecisionTree(X_train, X_test, Y_train, Y_test, max_depth, min_samples_s
     
     return clf
     
-def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8, min_samples_split = 5):
+def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8, min_samples_split = 5, n_estimators = 1000):
     from sklearn.ensemble import RandomForestClassifier
     Y_train = np.ravel(Y_train)
-    rf = RandomForestClassifier(n_estimators = 5000, random_state = 42, max_depth = max_depth, min_samples_split = min_samples_split)
+    rf = RandomForestClassifier(n_estimators =  n_estimators, random_state = 42, max_depth = max_depth, min_samples_split = min_samples_split)
 
 
     rf.fit(X_train, Y_train);
@@ -318,33 +240,7 @@ def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8, min_samples_sp
     Y_pred_test =rf.predict(X_test)
     print (rf)
     measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
-    
-def DeleteRowsFromDF(df,n_delete = 1000, targetIdx = 47):
-    df_copy = df.copy()
-    import random
-    deleteCount = 0
-    randArray = random.sample(range(1, df.shape[0] - 1), n_delete)
-    for i in np.arange(0,n_delete):
-        if (randArray[i] <  (df.shape[0] - deleteCount)):
-            if (df_copy.iloc[randArray[i]][targetIdx] == 0):
-                df_copy.drop([randArray[i]],inplace=True)
-                deleteCount = deleteCount + 1
-    
-    print("Delete Count:", deleteCount)
-    print("Number of 0's:", np.sum(1-df_copy.iloc[:,targetIdx]))
-    print("Number of 1's:", np.sum(df_copy.iloc[:,targetIdx]))
-
-    return df_copy
-            
-  
-def AccessData(df,xArray,yIdx):
-    X= df.iloc[:,xArray].values
-    Y= df.iloc[:,yIdx].values
-    print("\nTarget Attribute:")
-    print("  ", df.columns[yIdx])
-
-    return X,Y
-    
+               
 
 def measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train):
 
@@ -436,7 +332,6 @@ cat_cols  = [x for x in df.columns if x not in num_cols + target_col + id_col]
 binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target_col]
 multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
 
-print(df.dtypes)
                  
  #Label encoding Binary columns
 le = LabelEncoder()
@@ -447,6 +342,13 @@ for i in target_col:
     
 #Duplicating columns for multi value columns
 df = pd.get_dummies(data = df ,columns = multiple_cols)
+
+#df_overyear = df.copy()
+
+df_overyear_temp = df[df["tenure"] > 12]
+df_overyear = df_overyear_temp.reset_index() 
+cols    = [i for i in df_overyear.columns if i not in 'index']
+df_overyear = df_overyear[cols]
 
 #==============================================================================
 # df['MonCharXTenure'] = df.MonthlyCharges*df.tenure
@@ -460,7 +362,14 @@ df_copy = df.copy()
 df = df.drop(labels=num_cols, axis=1)
 df = df.merge(scaled,left_index=True,right_index=True,how = "left")
 
-print(df.dtypes)
+scaler2 = StandardScaler()
+scaled2 = scaler2.fit_transform(df_overyear[num_cols])
+scaled2 = pd.DataFrame(scaled2,columns=num_cols)
+                 
+
+df_overyear_copy = df_overyear.copy()
+df_overyear = df_overyear.drop(labels=num_cols, axis=1)
+df_overyear = df_overyear.merge(scaled2,left_index=True,right_index=True,how = "left")
 
 #correlation
 correlation = df.corr()
@@ -503,7 +412,11 @@ myListSorted = myListSorted[0:np.size(myListSorted)-1]
 #==============================================================================
 
 ### Models
+
+df = df
+
 train,test = train_test_split(df,test_size = .25 ,random_state = 111)
+
 
 cols    = [i for i in df.columns if i not in id_col + target_col]
 train_X = train[cols]
@@ -512,19 +425,21 @@ test_X  = test[cols]
 test_Y  = test[target_col]  
 
 
+
 # Logistic Regression
-LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+if 0:
+    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
 
 # Decision Tree 
 if 0:
     clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-                             Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+                             Y_test = test_Y, max_depth = 5,  min_samples_split = 10,
                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 
 # Random Forest 
 if 0:
-    RandomForest(train_X, test_X, train_Y,
-                          test_Y, max_depth = 5, min_samples_split = 10)
+    RandomForest(train_X, test_X, train_Y, test_Y, 
+                 max_depth = 7, min_samples_split = 10,  n_estimators = 5000)
 
 
 # Neural Network (Keras)
@@ -559,7 +474,9 @@ if 0:
 
     
     LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
-    
+    clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
+                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+
     #Oversampling
     df_churn_over = df_churn.sample(count_no_churn, replace=True)
     df_over = pd.concat([df_no_churn, df_churn_over], axis=0)
@@ -574,6 +491,11 @@ if 0:
  
     
     LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
+                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+    RandomForest(train_X, test_X, train_Y, test_Y, 
+                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
+
 # =============================================================================
 # clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
 #                           Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
@@ -633,7 +555,7 @@ if 0:
     LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
     
 # Recursive Feature Elimination
-if 0:
+if 1:
     from sklearn.feature_selection import RFE
     from sklearn.linear_model import LogisticRegression
     
@@ -643,7 +565,7 @@ if 0:
     
     logit = LogisticRegression()
 
-    rfe = RFE(logit,24)
+    rfe = RFE(logit,12)
     rfe = rfe.fit(X,Y.values.ravel())
     
     rfe.support_
@@ -664,7 +586,14 @@ if 0:
     test_rf_Y  = test[target_col]
     
     print('\nRecursive Feature Elimination:')
-    LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
+   # LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
+# =============================================================================
+#     clf = TrainDecisionTree(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y,
+#                             max_depth = 5,  min_samples_split = 10,
+#                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+# =============================================================================
+    RandomForest(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, 
+                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
 
 # ==================================================v===========================
 # from imblearn.over_sampling import SMOTE
