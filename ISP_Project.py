@@ -332,8 +332,10 @@ cat_cols  = [x for x in df.columns if x not in num_cols + target_col + id_col]
 binary_cols = [x for x in df.columns if df[x].nunique() == 2 and x not in target_col]
 multiple_cols = [x for x in cat_cols if df[x].nunique() > 2 and x not in target_col]
 
-                 
- #Label encoding Binary columns
+noInternet_cols = ['OnlineSecurity_No internet service','DeviceProtection_No internet service','TechSupport_No internet service',
+                     'StreamingTV_No internet service','StreamingMovies_No internet service','OnlineBackup_No internet service']
+ 
+#Label encoding Binary columns
 le = LabelEncoder()
 for i in binary_cols:
     df[i] = le.fit_transform(df[i])
@@ -343,8 +345,13 @@ for i in target_col:
 #Duplicating columns for multi value columns
 df = pd.get_dummies(data = df ,columns = multiple_cols)
 
-#df_overyear = df.copy()
+#Eliminating redundant columns
+if 1:
+    cols    = [i for i in df.columns if i not in noInternet_cols]
+    df = df[cols]
 
+
+#df_overyear = df.copy()
 df_overyear_temp = df[df["tenure"] > 12]
 df_overyear = df_overyear_temp.reset_index() 
 cols    = [i for i in df_overyear.columns if i not in 'index']
@@ -448,7 +455,7 @@ if 0:
 # =============================================================================
 
 # Undersampling/Oversampling
-if 0:
+if 1:
     train,test = train_test_split(df,test_size = .25 ,random_state = 111)
 
     cols    = [i for i in df.columns if i not in id_col + target_col]
@@ -476,6 +483,8 @@ if 0:
     LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
     clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+    RandomForest(train_X, test_X, train_Y, test_Y, 
+                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
 
     #Oversampling
     df_churn_over = df_churn.sample(count_no_churn, replace=True)
@@ -555,7 +564,7 @@ if 0:
     LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
     
 # Recursive Feature Elimination
-if 1:
+if 0:
     from sklearn.feature_selection import RFE
     from sklearn.linear_model import LogisticRegression
     
@@ -565,11 +574,13 @@ if 1:
     
     logit = LogisticRegression()
 
-    rfe = RFE(logit,12)
+    rfe = RFE(logit,10)
     rfe = rfe.fit(X,Y.values.ravel())
     
     rfe.support_
     rfe.ranking_
+    
+
     
     #identified columns Recursive Feature Elimination
     idc_rfe = pd.DataFrame({"rfe_support" :rfe.support_,
@@ -586,14 +597,14 @@ if 1:
     test_rf_Y  = test[target_col]
     
     print('\nRecursive Feature Elimination:')
-   # LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
+    #LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
 # =============================================================================
 #     clf = TrainDecisionTree(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y,
 #                             max_depth = 5,  min_samples_split = 10,
 #                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 # =============================================================================
     RandomForest(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, 
-                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
+                     max_depth = 7, min_samples_split = 5,  n_estimators = 1000)
 
 # ==================================================v===========================
 # from imblearn.over_sampling import SMOTE
