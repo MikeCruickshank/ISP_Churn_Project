@@ -69,6 +69,18 @@ def LogisticRegressionModel(X_train, X_test, Y_train, Y_test, cols, penalty = 'l
 
     measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
     
+def TrainSVM(X_train, X_test, Y_train, Y_test, cols):
+    from sklearn import svm
+    
+    Y_train  = np.ravel(Y_train)
+    clf = svm.SVC(gamma=0.001, C=1.0, kernel='linear')
+    clf.fit(X_train, Y_train)  
+    
+    Y_pred_train =clf.predict(X_train)
+    Y_pred_test =clf.predict(X_test)
+    print("\nSVM:")
+    measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
+    
 #==============================================================================
 
 def TrainNeuralNetwork(df_onehot):
@@ -242,6 +254,7 @@ def RandomForest(X_train, X_test, Y_train, Y_test, max_depth = 8, min_samples_sp
     measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train)
                
 
+    
 def measure_performance(Y_test,Y_pred_test, Y_train, Y_pred_train):
 
     print("\n\nTraining Set:")
@@ -317,7 +330,9 @@ df = df[df["TotalCharges"].notnull()]
 df = df.reset_index()[df.columns]
 df["TotalCharges"] = df["TotalCharges"].astype(float)
 df["SeniorCitizen"] = df["SeniorCitizen"].replace({1:"Yes",0:"No"})
-df["TenureByGroup"] = df.apply(lambda df:label_tenure(df),axis=1)
+# =============================================================================
+# df["TenureByGroup"] = df.apply(lambda df:label_tenure(df),axis=1)
+# =============================================================================
       
       
 num_cols = ['tenure','MonthlyCharges','TotalCharges']
@@ -399,28 +414,32 @@ myListSorted = myListSorted[0:np.size(myListSorted)-1]
 # print(correlation.Churn)
 
 #==============================================================================
+# =============================================================================
 # fig, ax = plt.subplots()
 # index = np.arange(np.size(correlation_byChurnSorted))
 # bar_width = 0.30
 # opacity = 0.8
-#    
+#     
 # rects1 = ax.bar(index, correlation_byChurnSorted, bar_width, 
-#                 alpha=opacity, color = 'b')
+#                  alpha=opacity, color = 'b')
 # plt.ylabel('Correlation to Churn')
 # plt.yticks(rotation = 90.)
 # plt.xticks(index + bar_width, myListSorted, rotation=90.)
 # saveStr = 'Correlation_BarChart.png'
-# plt.axis([-0.5, np.size(correlation_byChurnSorted), -0.5, 0.5])
+# plt.axis([-0.5, np.size(correlation_byChurnSorted), -1.0, 1.0])
 # fig = plt.gcf()
 # fig.set_size_inches(11,8)
 # plt.tight_layout()
 # plt.savefig(saveStr)
 # plt.show()   
+# =============================================================================
 #==============================================================================
 
 ### Models
+df = df_overyear
 
-df = df
+count_class_0, count_class_1 = df.Churn.value_counts()
+
 
 train,test = train_test_split(df,test_size = .25 ,random_state = 111)
 
@@ -440,22 +459,24 @@ if 0:
 # Decision Tree 
 if 0:
     clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-                             Y_test = test_Y, max_depth = 5,  min_samples_split = 10,
+                             Y_test = test_Y, max_depth = 1,  min_samples_split = 20,
                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 
 # Random Forest 
 if 0:
-    RandomForest(train_X, test_X, train_Y, test_Y, 
-                 max_depth = 7, min_samples_split = 10,  n_estimators = 5000)
+    RandomForest(train_X, test_X, train_Y, test_Y,
+                 max_depth = 8, min_samples_split = 20,  n_estimators = 1000)
 
+# SVM
+if 0: 
+    TrainSVM(train_X, test_X, train_Y, test_Y, cols)
 
 # Neural Network (Keras)
-# =============================================================================
-# TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
-# =============================================================================
+if 0:
+    TrainKerasNeuralNetwork(train_X, test_X, train_Y, test_Y, epochs = 35, batch_size = 1024)
 
 # Undersampling/Oversampling
-if 1:
+if 0:
     train,test = train_test_split(df,test_size = .25 ,random_state = 111)
 
     cols    = [i for i in df.columns if i not in id_col + target_col]
@@ -480,12 +501,12 @@ if 1:
     train_Y = train[target_col]
 
     
-    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
-    clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
-                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-    RandomForest(train_X, test_X, train_Y, test_Y, 
-                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
-
+    #LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    #clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
+    #                        feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+    #RandomForest(train_X, test_X, train_Y, test_Y, max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
+    TrainSVM(train_X, test_X, train_Y, test_Y, cols)
+    
     #Oversampling
     df_churn_over = df_churn.sample(count_no_churn, replace=True)
     df_over = pd.concat([df_no_churn, df_churn_over], axis=0)
@@ -497,19 +518,16 @@ if 1:
     
     train_X = train[cols]
     train_Y = train[target_col]
- 
     
-    LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
-    clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
-                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-    RandomForest(train_X, test_X, train_Y, test_Y, 
-                     max_depth = 5, min_samples_split = 5,  n_estimators = 1000)
-
-# =============================================================================
-# clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
-#                           Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
-#                          feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-# =============================================================================
+    #TrainSVM(train_X, test_X, train_Y, test_Y, cols)
+    #LogisticRegressionModel(train_X, test_X, train_Y, test_Y, cols, penalty = 'l2')
+    #clf = TrainDecisionTree(train_X, test_X, train_Y, test_Y, max_depth = 5,  min_samples_split = 10,
+    #                        feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+    #RandomForest(train_X, test_X, train_Y, test_Y, 
+    #                 max_depth = 6, min_samples_split = 5,  n_estimators = 1000)
+    #clf = TrainDecisionTree(X_train = train_X, X_test = test_X, Y_train = train_Y,
+    #                      Y_test = test_Y, max_depth = 5,  min_samples_split = 2,
+    #                     feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
 
 
 # =============================================================================
@@ -568,28 +586,35 @@ if 0:
     from sklearn.feature_selection import RFE
     from sklearn.linear_model import LogisticRegression
     
+    from sklearn.ensemble import RandomForestClassifier
+    rf = RandomForestClassifier(n_estimators = 1000, random_state = 42, max_depth = 6, min_samples_split = 10)
+
+    from sklearn import tree
+    clf = tree.DecisionTreeClassifier(criterion='gini', max_depth=5, min_samples_split=10, min_samples_leaf=1)
+    
     train,test = train_test_split(df,test_size = .25 ,random_state = 111)
     X = df[[i for i in df.columns if i not in id_col + target_col]]
     Y = df[target_col]
-    
-    logit = LogisticRegression()
+    col_names = [i for i in df.columns if i not in id_col + target_col]
+    #logit = LogisticRegression()
 
-    rfe = RFE(logit,10)
+
+    rfe = RFE(rf,1)
     rfe = rfe.fit(X,Y.values.ravel())
     
     rfe.support_
     rfe.ranking_
-    
-
-    
+        
     #identified columns Recursive Feature Elimination
     idc_rfe = pd.DataFrame({"rfe_support" :rfe.support_,
                            "columns" : [i for i in df.columns if i not in id_col + target_col],
                            "ranking" : rfe.ranking_,
                           })
     cols = idc_rfe[idc_rfe["rfe_support"] == True]["columns"].tolist()
-    
-    
+
+    print("Features sorted by their rank:")
+    print (sorted(zip(map(lambda x: round(x, 4), rfe.ranking_), col_names)))
+
     #separating train and test data
     train_rf_X = X[cols]
     train_rf_Y = Y
@@ -598,94 +623,10 @@ if 0:
     
     print('\nRecursive Feature Elimination:')
     #LogisticRegressionModel(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, cols, penalty = 'l2')
-# =============================================================================
-#     clf = TrainDecisionTree(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y,
-#                             max_depth = 5,  min_samples_split = 10,
-#                             feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-# =============================================================================
-    RandomForest(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, 
-                     max_depth = 7, min_samples_split = 5,  n_estimators = 1000)
-
-# ==================================================v===========================
-# from imblearn.over_sampling import SMOTE
-# 
-# cols    = [i for i in df.columns if i not in id_col + target_col]
-# 
-# smote_X = df[cols]
-# smote_Y = df[target_col]
-# 
-# #Split train and test data
-# smote_train_X,smote_test_X,smote_train_Y,smote_test_Y = train_test_split(smote_X,smote_Y,
-#                                                                          test_size = .25 ,
-#                                                                          random_state = 111)
-# 
-# #oversampling minority class using smote
-# over_samp = SMOTE(random_state = 0)
-# over_samp_smote_X,over_samp_smote_Y = over_samp.fit_sample(smote_train_X,smote_train_Y)
-# over_samp_smote_X = pd.DataFrame(data = over_samp_smote_X,columns=cols)
-# over_samp_smote_Y = pd.DataFrame(data = over_samp_smote_Y,columns=target_col)
-# 
-# 
-# TrainKerasNeuralNetwork(over_samp_smote_X,test_X,over_samp_smote_Y,test_Y, epochs = 35, batch_size = 1024)
-# 
-# =============================================================================
-#==============================================================================
-# df_cat = ToCategories(df_drop, column_names = column_names_objects)
-# df_replace = ReduceDataFrame(df_drop, column_names = column_names_objects)
-#==============================================================================
-#==============================================================================
-# df_onehot = OneHotDataFrame(df_drop, column_names = column_names_objects)
-# 
-# column_names = list(df_replace.head(0))
-# n_columns = np.size(column_names)
-#==============================================================================
-#==================================
-
-
-
-# Decision Tree
-#==============================================================================
-#==============================================================================
-# X,Y = AccessData(df = df_replace, xArray = np.arange(1,18), yIdx = 20)
-# X_train, X_test, Y_train, Y_test = SplitData(X,Y,train_size = 0.8)
-# 
-# print("\nWith Replace Data: ")
-# clf = TrainDecisionTree(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test, max_depth = 14,  min_samples_split = 10,feature_names = column_names[1:n_columns-1], target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
-#==============================================================================
-#==============================================================================
-# print("\n\nAdding KMeans:")
-# X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.8)
-# clf = TrainDecisionTree(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test, max_depth = 5,  min_samples_split = 10,feature_names = column_names[1:n_columns-1], target_names = ['Churn: No','Churn: Yes'],filename = 'treeWithKmeans.dot')
-#==============================================================================
-
-
-# Random Forest
-#==============================================================================
-#==============================================================================
-# print("\nBefore KMeans: ")
-# RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
-# print("\n\nAdding KMeans:")
-# X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.6)
-# RandomForest(X_train = X_train, X_test = X_test, Y_train = Y_train, Y_test = Y_test)
-# 
-# 
-#==============================================================================
-#==============================================================================
-# Neural Network w/ Keras
-#==============================================================================
-# df_onehot = DeleteRows(df_onehot,n_delete = 3500, targetLabel = ['Churn_Yes'])
-# print(np.shape(df_onehot))
-# X,Y = AccessData(df = df_onehot, xArray = np.concatenate(np.arange(1,20),np.arange(30,42)), yIdx = 47)
-# 
-# print("\nWith One-hot Data: ")
-# X_train, X_test, Y_train, Y_test = SplitData(X,Y,train_size = 0.7)
-# TrainKerasNeuralNetwork(X_train, X_test, Y_train, Y_test,epochs = 100, batch_size = 32)
-# 
-#==============================================================================
-#==============================================================================
-# print("\n\nAdding KMeans:")
-# X_train, X_test, Y_train, Y_test = Kmeans(X,Y,train_size = 0.7)
-# TrainKerasNeuralNetwork(X_train, X_test, Y_train, Y_test,epochs = 2000, batch_size = 64)
-# 
-#==============================================================================
+    
+    
+    #clf = TrainDecisionTree(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y,
+                            max_depth = 5,  min_samples_split = 10,
+                            feature_names = cols, target_names = ['Churn: No','Churn: Yes'], filename = 'tree.dot')
+    RandomForest(train_rf_X,test_rf_X, train_rf_Y, test_rf_Y, max_depth = 7, min_samples_split = 5,  n_estimators = 1000)
 

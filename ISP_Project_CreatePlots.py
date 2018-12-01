@@ -16,7 +16,6 @@ def MakeBarChart(df, column):
     df_no_churn = df[df["Churn"] == "No"]
     fig, ax = plt.subplots()
     
-    
     lab0 = df_no_churn[column].value_counts().keys().tolist()
     val0 = df_no_churn[column].value_counts().values.tolist()
     lab1 = df_churn[column].value_counts().keys().tolist()
@@ -54,7 +53,7 @@ def MakeBarChart(df, column):
         plt.xticks(index + bar_width, lab0, rotation=0.)
     plt.axis([-0.5, index[n_groups-1]+1.0, 0, 1.5*m])
     plt.legend(loc='best')
-    saveStr = column + '_BarChart.png'
+    saveStr = column + '_BarChart.png'  
     print(saveStr)
     plt.tight_layout()
     if (saveFigure == 1):
@@ -63,13 +62,11 @@ def MakeBarChart(df, column):
  
     
 def MakeBoxPlot(df, column):
-    df.boxplot(column=column,by=['Churn'],rot = 0,figsize=(5,6))
+    df.boxplot(column=column,by=['Churn'],rot = 0,figsize=(5,5))
     plt.ylabel(column)
     plt.xlabel('Churn')
-    plt.title(column)
     saveStr = column + '_BoxPlot.png'
     print(saveStr)
-    plt.tight_layout()
     if (saveFigure == 1):
         plt.savefig(saveStr)      
     plt.show()
@@ -90,10 +87,10 @@ def MakeChurnPlots(df):
     # churn pie plot
     lab = df["Churn"].value_counts().keys().tolist()
     val = df["Churn"].value_counts().values.tolist()
-    
-    plt.pie(val, explode=None, labels=lab, autopct='%1.1f%%', startangle=90)
+
+    plt.figure(figsize=(2.5,2.5))   
+    plt.pie(val, explode=None, labels=lab,  autopct=lambda p : '{:.1f}%\n({:,.0f})'.format(p,p * sum(val)/100), startangle=90)
     plt.title('Customer Churn')
-    plt.axis('equal')
     if (saveFigure == 1):
         plt.savefig('ChurnPie.png')
     plt.show()   
